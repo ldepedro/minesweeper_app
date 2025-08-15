@@ -37,7 +37,7 @@ export default function Home() {
           <Board key={key} rows={rows} cols={cols} mines={mines} />
 
           <Text fontSize="xs" color="gray.500" textAlign="center">
-            Tip: Right-click (or long-press) to place/remove 🚩 flags.
+            Tip: Right-click to place/remove 🚩 flags.
           </Text>
         </VStack>
       </Box>
