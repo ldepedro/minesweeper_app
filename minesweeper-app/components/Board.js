@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { VStack, HStack, Button, Text } from "@chakra-ui/react";
+import { useState, useEffect } from "react";
+import { VStack, HStack, Text } from "@chakra-ui/react";
 import Cell from "./Cell";
+import useAudio from "./useAudio";
 
 function makeBoard(rows, cols, mines) {
-  // Initialize empty board
   let board = Array.from({ length: rows }, () =>
     Array.from({ length: cols }, () => ({
       revealed: false,
@@ -13,7 +13,6 @@ function makeBoard(rows, cols, mines) {
     }))
   );
 
-  // Place mines randomly
   let placed = 0;
   while (placed < mines) {
     let r = Math.floor(Math.random() * rows);
@@ -24,7 +23,6 @@ function makeBoard(rows, cols, mines) {
     }
   }
 
-  // Calculate adjacent counts
   const dirs = [
     [-1, -1], [-1, 0], [-1, 1],
     [0, -1],          [0, 1],
@@ -51,8 +49,16 @@ function makeBoard(rows, cols, mines) {
 export default function Board({ rows, cols, mines }) {
   const [board, setBoard] = useState(() => makeBoard(rows, cols, mines));
   const [status, setStatus] = useState("playing"); // playing, win, lose
+  const [started, setStarted] = useState(false); // first click flag
+
+  const { playBackground, playEnd } = useAudio();
 
   const revealCell = (r, c) => {
+    if (!started) {
+      setStarted(true);
+      playBackground();
+    }
+
     if (status !== "playing") return;
 
     const newBoard = board.map(row => row.map(cell => ({ ...cell })));
@@ -63,9 +69,9 @@ export default function Board({ rows, cols, mines }) {
 
     if (cell.mine) {
       setStatus("lose");
-      // reveal all mines
       newBoard.forEach(row => row.forEach(c => { if (c.mine) c.revealed = true; }));
       setBoard(newBoard);
+      playEnd("lose");
       return;
     }
 
@@ -73,11 +79,10 @@ export default function Board({ rows, cols, mines }) {
       floodReveal(newBoard, r, c);
     }
 
-    // Check win condition
     if (checkWin(newBoard)) {
       setStatus("win");
-      // auto-reveal all mines
       newBoard.forEach(row => row.forEach(c => { if (c.mine) c.revealed = true; }));
+      playEnd("win");
     }
 
     setBoard(newBoard);
@@ -110,17 +115,21 @@ export default function Board({ rows, cols, mines }) {
     e.preventDefault();
     if (status !== "playing") return;
 
+    if (!started) {
+      setStarted(true);
+      playBackground();
+    }
+
     const newBoard = board.map(row => row.map(cell => ({ ...cell })));
     const cell = newBoard[r][c];
     if (!cell.revealed) {
       cell.flag = !cell.flag;
     }
 
-    // Check win condition after flagging
     if (checkWin(newBoard)) {
       setStatus("win");
-      // auto-reveal all mines
       newBoard.forEach(row => row.forEach(c => { if (c.mine) c.revealed = true; }));
+      playEnd("win");
     }
 
     setBoard(newBoard);
